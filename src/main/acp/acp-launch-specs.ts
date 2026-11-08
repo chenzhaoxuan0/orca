@@ -16,6 +16,7 @@ import type { InitializeResponse } from './generated/acp-protocol.generated'
 import { compareAppVersions } from '../../shared/app-version'
 import type { ManagedRuntime } from '../node-runtime/managed-runtime-release'
 import { readGrokModelCatalog } from './acp-dialects/grok-model-catalog'
+import { readMcodeModelCatalog } from './acp-dialects/mcode-model-catalog'
 import {
   OPENCODE_MODEL_LISTING_ARGS,
   parseOpenCodeModelListing
@@ -320,8 +321,9 @@ export const MCODE_LAUNCH_SPEC = {
   account: directoryAccountBinding('MINIMAX_DATA_DIR', (homePath) => join(homePath, '.minimax')),
   installDirectories: () => [],
   modelDiscovery: {
-    kind: 'unavailable',
-    reason: 'mcode lists its models via provider config'
+    kind: 'initialize',
+    read: readMcodeModelCatalog,
+    listingNamesConfiguredModel: true
   },
   transcriptImport: null,
   sessionHistory: MCODE_SESSION_HISTORY,
