@@ -16,9 +16,12 @@ export const MCODE_EFFORT_CHOICES: AgentSessionOptionChoice[] = [
   { value: 'max', label: 'Max' }
 ]
 
-const MODEL_DESCRIPTIONS: Readonly<Record<string, string>> = {
+export const MODEL_DESCRIPTIONS: Readonly<Record<string, string>> = {
   'MiniMax-M3.1-Flash': 'Fast and versatile frontier model with deep reasoning',
-  'MiniMax-M3': 'Frontier model for complex agentic coding and deep reasoning'
+  'MiniMax-M3.1-Flash-Preview': 'Fast and versatile frontier model with deep reasoning (Preview)',
+  'MiniMax-M3': 'Frontier model for complex agentic coding and deep reasoning',
+  'MiniMax-M2.7-highspeed': 'High-speed model for everyday coding and tool use',
+  'MiniMax-M2.7': 'Capable model for everyday programming tasks'
 }
 
 const DEFAULT_MCODE_MODELS: AgentSessionModelOption[] = [
@@ -36,23 +39,57 @@ const DEFAULT_MCODE_MODELS: AgentSessionModelOption[] = [
     label: 'MiniMax M3',
     description: MODEL_DESCRIPTIONS['MiniMax-M3'],
     isDefault: false,
-    efforts: MCODE_EFFORT_CHOICES,
-    defaultEffort: 'high',
-    declaredDefaultEffort: 'high'
+    efforts: [],
+    declaredDefaultEffort: null
   }
 ]
 
+type McodeModelConfig = {
+  name?: string
+  variants?: Record<string, unknown>
+  thinking_config?: { mode?: string; default_value?: string }
+  thinking?: {
+    effortOptions?: string[]
+    defaultEffort?: string
+  }
+}
+
 type McodeProviderConfig = {
   name?: string
-  models?: Record<
-    string,
-    {
-      name?: string
-      variants?: Record<string, unknown>
-      thinking_config?: { mode?: string }
-    }
-  >
+  models?: Record<string, McodeModelConfig>
   model_order?: string[]
+}
+
+const DYNAMIC_MODEL_EFFORTS = new Map<
+  string,
+  {
+    efforts: AgentSessionOptionChoice[]
+    defaultEffort?: string
+    declaredDefaultEffort?: string | null
+  }
+>()
+
+export function mcodeModelEfforts(model: { modelId: string }): {
+  efforts: AgentSessionOptionChoice[]
+  defaultEffort?: string
+  declaredDefaultEffort?: string | null
+} {
+  const cached = DYNAMIC_MODEL_EFFORTS.get(model.modelId)
+  if (cached) {
+    return cached
+  }
+  const idLower = model.modelId.toLowerCase()
+  if (idLower.includes('flash')) {
+    return {
+      efforts: MCODE_EFFORT_CHOICES,
+      defaultEffort: 'high',
+      declaredDefaultEffort: 'high'
+    }
+  }
+  return {
+    efforts: [],
+    declaredDefaultEffort: null
+  }
 }
 
 export async function parseMcodeModelCatalogFromConfigFile(
@@ -60,14 +97,20 @@ export async function parseMcodeModelCatalogFromConfigFile(
 ): Promise<AgentSessionModelOption[]> {
   try {
     const raw = await readFile(configPath, 'utf8')
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: YAML parser returns unknown and requires structured typing
     const doc = parseYaml(raw) as {
       defaultModel?: string
       provider?: Record<string, McodeProviderConfig>
+      custom_provider?: Record<string, McodeProviderConfig>
     }
     const defaultModel = typeof doc.defaultModel === 'string' ? doc.defaultModel : ''
     const results: AgentSessionModelOption[] = []
+    const seenModelKeys = new Set<string>()
 
-    const providers = doc.provider ?? {}
+    const providers = {
+      ...doc.provider,
+      ...doc.custom_provider
+    }
 
     for (const [providerId, provider] of Object.entries(providers)) {
       if (!provider || typeof provider !== 'object' || !provider.models) {
@@ -93,6 +136,11 @@ export async function parseMcodeModelCatalogFromConfigFile(
       }
 
       for (const [modelId, model] of modelEntries) {
+        if (seenModelKeys.has(modelId)) {
+          continue
+        }
+        seenModelKeys.add(modelId)
+
         const displayName = model?.name ? `MiniMax ${model.name}` : modelId
         const description =
           MODEL_DESCRIPTIONS[modelId] ??
@@ -105,14 +153,29 @@ export async function parseMcodeModelCatalogFromConfigFile(
           defaultModel === modelId ||
           modelId === 'MiniMax-M3.1-Flash'
 
+        const hasEffortOptions =
+          Array.isArray(model?.thinking?.effortOptions) &&
+          model.thinking.effortOptions.some((opt) => opt !== 'default')
+        const isFlash = modelId.includes('Flash')
+        const supportsEffort = hasEffortOptions || isFlash
+
+        const efforts = supportsEffort ? MCODE_EFFORT_CHOICES : []
+        const defaultEffort = supportsEffort ? 'high' : undefined
+        const declaredDefaultEffort = supportsEffort ? 'high' : null
+
+        const fullId = `m:${providerId}:${modelId}:v:thinking`
+        const effortMetadata = { efforts, defaultEffort, declaredDefaultEffort }
+        DYNAMIC_MODEL_EFFORTS.set(fullId, effortMetadata)
+        DYNAMIC_MODEL_EFFORTS.set(modelId, effortMetadata)
+
         results.push({
-          id: `m:${providerId}:${modelId}:v:thinking`,
+          id: fullId,
           label: displayName,
           description,
           isDefault: isModelDefault,
-          efforts: MCODE_EFFORT_CHOICES,
-          defaultEffort: 'high',
-          declaredDefaultEffort: 'high'
+          efforts,
+          ...(defaultEffort ? { defaultEffort } : {}),
+          declaredDefaultEffort
         })
       }
     }

@@ -192,8 +192,8 @@ export function MiniMaxIcon({
           y2="15.5"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#E21680" />
-          <stop offset="1" stopColor="#FF633A" />
+          <stop stopColor="var(--color-git-graph-lane-2)" />
+          <stop offset="1" stopColor="var(--color-git-graph-base-ref)" />
         </linearGradient>
       </defs>
       <path

@@ -60,7 +60,7 @@ export const MCODE_SESSION_OPTION_CATALOG: AgentSessionOptionCatalog = {
       label: 'MiniMax M3',
       description: 'Frontier model for complex agentic coding and deep reasoning',
       contextWindowTokens: 1_000_000,
-      options: [MCODE_EFFORT]
+      options: []
     }
   ],
   modelApply: {
@@ -74,5 +74,5 @@ export const MCODE_SESSION_OPTION_CATALOG: AgentSessionOptionCatalog = {
     launchArgs: (value) => ['-m', mcodeCliModelFromId(String(value))],
     midSession: { kind: 'agent-picker', command: '/model' }
   },
-  unknownModelOptions: [MCODE_EFFORT]
+  unknownModelOptions: []
 }
