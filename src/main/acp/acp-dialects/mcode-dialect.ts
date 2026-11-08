@@ -18,15 +18,6 @@ function resolveMcodeModelNameAndDescription(choice: SessionConfigSelectOption):
       description: MODEL_DESCRIPTIONS['MiniMax-M3.1-Flash']
     }
   }
-  if (
-    rawId === 'MiniMax-M3.1-Flash-Preview' ||
-    choice.value.includes('MiniMax-M3.1-Flash-Preview:')
-  ) {
-    return {
-      name: 'MiniMax M3.1 Flash Preview',
-      description: MODEL_DESCRIPTIONS['MiniMax-M3.1-Flash-Preview']
-    }
-  }
   if (rawId === 'MiniMax-M3' || choice.value.includes('MiniMax-M3:')) {
     return {
       name: 'MiniMax M3',
@@ -59,14 +50,28 @@ function resolveMcodeModelNameAndDescription(choice: SessionConfigSelectOption):
 }
 
 export function normalizeMcodeConfigOptions(options: SessionConfigOption[]): SessionConfigOption[] {
-  return options.map((option) => {
+  const modelOption = options.find(
+    (opt) => opt.type === 'select' && (opt.category === 'model' || opt.id === 'model')
+  )
+  const rawModelValue = modelOption?.type === 'select' ? modelOption.currentValue : ''
+  const isOff = rawModelValue.endsWith(':v:')
+  const isSwitchable =
+    rawModelValue.includes('MiniMax-M3:') ||
+    rawModelValue.includes('MiniMax-M2.7:') ||
+    rawModelValue.includes('MiniMax-M2.7-highspeed:')
+
+  let hasThoughtLevel = false
+
+  const normalized = options.map((option) => {
     if (option.type === 'select' && (option.category === 'model' || option.id === 'model')) {
       const choices = acpSelectChoices(option)
       const cleanChoices: SessionConfigSelectOption[] = choices
         .filter(
           (choice) =>
-            choice.value.endsWith(':thinking') ||
-            !choices.some((other) => other.value === `${choice.value}thinking`)
+            !choice.value.includes('MiniMax-M3.1-Flash-Preview') &&
+            !choice.value.includes('custom_provider') &&
+            (choice.value.endsWith(':thinking') ||
+              !choices.some((other) => other.value === `${choice.value}thinking`))
         )
         .map((choice) => {
           const { name, description } = resolveMcodeModelNameAndDescription(choice)
@@ -93,6 +98,7 @@ export function normalizeMcodeConfigOptions(options: SessionConfigOption[]): Ses
       option.type === 'select' &&
       (option.category === 'thought_level' || option.id === 'thinkingEffort')
     ) {
+      hasThoughtLevel = true
       const choices = acpSelectChoices(option).filter((choice) => choice.value !== 'default')
       const currentValue =
         option.currentValue === 'default' || !option.currentValue ? 'high' : option.currentValue
@@ -104,9 +110,27 @@ export function normalizeMcodeConfigOptions(options: SessionConfigOption[]): Ses
     }
     return option
   })
+
+  if (!hasThoughtLevel && isSwitchable) {
+    normalized.push({
+      type: 'select',
+      id: 'thinkingEffort',
+      name: 'Thinking effort',
+      description: 'Controls whether thinking is enabled for this model.',
+      category: 'thought_level',
+      currentValue: isOff ? 'off' : 'on',
+      options: [
+        { value: 'off', name: 'Off' },
+        { value: 'on', name: 'On' }
+      ]
+    })
+  }
+
+  return normalized
 }
 
 export const MCODE_DIALECT: AcpDialect = {
+  effortChangesModel: true,
   modelEfforts: mcodeModelEfforts,
   normalizeConfigOptions: normalizeMcodeConfigOptions
 }

@@ -34,6 +34,36 @@ export const MCODE_EFFORT: CatalogOption = {
   }
 }
 
+export const MCODE_ON_OFF_EFFORT_CHOICES = [
+  { value: 'off', label: 'Off' },
+  { value: 'on', label: 'On' }
+]
+
+export const MCODE_ON_OFF_EFFORT: CatalogOption = {
+  id: 'effort',
+  label: 'Reasoning effort',
+  category: 'thought_level',
+  kind: {
+    type: 'select',
+    choices: MCODE_ON_OFF_EFFORT_CHOICES,
+    defaultValue: 'on'
+  },
+  apply: {
+    ...agentChoiceCliApply(
+      'mcode',
+      [
+        {
+          kind: 'value',
+          names: ['--effort'],
+          lift: 'separate-and-long-equals'
+        }
+      ],
+      '--effort'
+    ),
+    midSession: { kind: 'command', build: (value) => `/effort ${String(value)}` }
+  }
+}
+
 export function mcodeCliModelFromId(id: string): string {
   const match = /^m:([^:]+):([^:]+):v:(.*)$/.exec(id)
   if (match) {
@@ -60,7 +90,7 @@ export const MCODE_SESSION_OPTION_CATALOG: AgentSessionOptionCatalog = {
       label: 'MiniMax M3',
       description: 'Frontier model for complex agentic coding and deep reasoning',
       contextWindowTokens: 1_000_000,
-      options: []
+      options: [MCODE_ON_OFF_EFFORT]
     }
   ],
   modelApply: {

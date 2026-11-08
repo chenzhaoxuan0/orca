@@ -1,12 +1,11 @@
 import { acpSelectChoices } from './acp-select-choices'
 import { acpInitializeForkSupport } from './acp-fork-support'
+import { buildSessionModelOptions } from './acp-session-model-options'
 import type {
-  AgentSessionModelOption,
   AgentSessionOptionChoice,
   AgentSessionSlashCommand
 } from '../../shared/agent-session/agent-session-wire'
 import type { AgentSessionOptionsResult } from '../../shared/agent-session/options/agent-session-options-result'
-import type { AcpStructuredConnection } from './acp-structured-connection'
 import type { AcpDialect } from './acp-dialects/acp-dialect'
 import {
   unpickedSessionConfiguredChoice,
@@ -176,8 +175,7 @@ export class AcpStructuredOptions {
     const option = this.select('thought_level')
     return !!(
       option &&
-      (this.dialect.clampsUnlistedEffort ||
-        acpSelectChoices(option).some((choice) => choice.value === value))
+      (this.dialect.clampsUnlistedEffort || acpSelectChoices(option).some((c) => c.value === value))
     )
   }
 
@@ -191,6 +189,17 @@ export class AcpStructuredOptions {
           : null
     }
     if (key === 'effort') {
+      if (this.dialect.effortChangesModel && (value === 'off' || value === 'on')) {
+        const modelOption = this.select('model')
+        if (modelOption) {
+          const base = modelOption.currentValue.replace(/:v:.*$/, '')
+          return {
+            method: 'config',
+            configId: modelOption.id,
+            value: value === 'off' ? `${base}:v:` : `${base}:v:thinking`
+          }
+        }
+      }
       const option = this.select('thought_level')
       return option ? { method: 'config', configId: option.id, value } : null
     }
@@ -204,47 +213,26 @@ export class AcpStructuredOptions {
     const toChoice = (id: string, label: string, description?: string | null) => ({
       id,
       label,
-      ...(description ? { description } : {})
+      ...(description && { description })
     })
     const sessionEfforts: AgentSessionOptionChoice[] = effortOption
       ? acpSelectChoices(effortOption).map((c) => ({
           value: c.value,
           label: c.name,
-          ...(c.description ? { description: c.description } : {})
+          ...(c.description && { description: c.description })
         }))
       : []
     const currentModel = (modelOption?.currentValue ?? this.models?.currentModelId) || undefined
-    const listed: { id: string; label: string; description?: string }[] = modelOption
+    const listed = modelOption
       ? acpSelectChoices(modelOption).map((c) => toChoice(c.value, c.name, c.description))
       : (this.models?.availableModels.map((m) => toChoice(m.modelId, m.name, m.description)) ?? [])
-    const models: AgentSessionModelOption[] = listed.map((model) => {
-      const info = this.models?.availableModels.find((e) => e.modelId === model.id) ?? {
-        modelId: model.id,
-        name: model.label,
-        ...(model.description ? { description: model.description } : {})
-      }
-      const advertised = info ? this.dialect.modelEfforts?.(info) : undefined
-      // A current-session menu supplies no negative evidence about an unobserved model.
-      const sessionMenu =
-        model.id === currentModel
-          ? { efforts: sessionEfforts }
-          : (modelOption || effortOption) && !advertised
-            ? {
-                efforts: this.dialect.clampsUnlistedEffort ? sessionEfforts : [],
-                effortsKnown: false as const
-              }
-            : { efforts: [] }
-      return {
-        ...model,
-        isDefault: false,
-        // Fall back to the running session's menu when the advertised menu is empty.
-        ...(advertised && (advertised.efforts.length > 0 || model.id !== currentModel)
-          ? advertised
-          : sessionMenu),
-        ...(advertised?.declaredDefaultEffort !== undefined && {
-          declaredDefaultEffort: advertised.declaredDefaultEffort
-        })
-      }
+    const models = buildSessionModelOptions({
+      listed,
+      currentModel,
+      sessionEfforts,
+      hasModelOrEffort: !!(modelOption || effortOption),
+      availableModels: this.models?.availableModels,
+      dialect: this.dialect
     })
     const confirmed = [...(currentModel ? ['model'] : []), ...(effortOption ? ['effort'] : [])]
     return {
@@ -318,27 +306,4 @@ export class AcpStructuredOptions {
   }
 }
 
-export async function acpSessionAcceptsImages(session: {
-  connection: Pick<AcpStructuredConnection, 'initialize'>
-}): Promise<boolean> {
-  return (
-    (await session.connection.initialize()).agentCapabilities?.promptCapabilities?.image === true
-  )
-}
-
-export async function readAcpLiveOptions(
-  session: Parameters<typeof acpSessionAcceptsImages>[0] & { options: AcpStructuredOptions },
-  permissionModes?: Readonly<Partial<Record<string, string>>>
-) {
-  const acceptsImages = await acpSessionAcceptsImages(session)
-  // Only startup establishes config resolution; later reads may reflect changed picks.
-  const options = withLiveCatalogListing(session.options.read())
-  return {
-    ...options,
-    current: {
-      ...options.current,
-      reportedPermissionMode: session.options.reportedPermissionMode(permissionModes)
-    },
-    acceptsImages
-  }
-}
+export { acpSessionAcceptsImages, readAcpLiveOptions } from './acp-live-options'

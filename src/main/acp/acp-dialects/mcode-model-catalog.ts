@@ -16,9 +16,13 @@ export const MCODE_EFFORT_CHOICES: AgentSessionOptionChoice[] = [
   { value: 'max', label: 'Max' }
 ]
 
+export const MCODE_ON_OFF_EFFORT_CHOICES: AgentSessionOptionChoice[] = [
+  { value: 'off', label: 'Off' },
+  { value: 'on', label: 'On' }
+]
+
 export const MODEL_DESCRIPTIONS: Readonly<Record<string, string>> = {
   'MiniMax-M3.1-Flash': 'Fast and versatile frontier model with deep reasoning',
-  'MiniMax-M3.1-Flash-Preview': 'Fast and versatile frontier model with deep reasoning (Preview)',
   'MiniMax-M3': 'Frontier model for complex agentic coding and deep reasoning',
   'MiniMax-M2.7-highspeed': 'High-speed model for everyday coding and tool use',
   'MiniMax-M2.7': 'Capable model for everyday programming tasks'
@@ -39,8 +43,9 @@ const DEFAULT_MCODE_MODELS: AgentSessionModelOption[] = [
     label: 'MiniMax M3',
     description: MODEL_DESCRIPTIONS['MiniMax-M3'],
     isDefault: false,
-    efforts: [],
-    declaredDefaultEffort: null
+    efforts: MCODE_ON_OFF_EFFORT_CHOICES,
+    defaultEffort: 'on',
+    declaredDefaultEffort: 'on'
   }
 ]
 
@@ -86,6 +91,13 @@ export function mcodeModelEfforts(model: { modelId: string }): {
       declaredDefaultEffort: 'high'
     }
   }
+  if (idLower.includes('m3') || idLower.includes('m2.7')) {
+    return {
+      efforts: MCODE_ON_OFF_EFFORT_CHOICES,
+      defaultEffort: 'on',
+      declaredDefaultEffort: 'on'
+    }
+  }
   return {
     efforts: [],
     declaredDefaultEffort: null
@@ -101,16 +113,12 @@ export async function parseMcodeModelCatalogFromConfigFile(
     const doc = parseYaml(raw) as {
       defaultModel?: string
       provider?: Record<string, McodeProviderConfig>
-      custom_provider?: Record<string, McodeProviderConfig>
     }
     const defaultModel = typeof doc.defaultModel === 'string' ? doc.defaultModel : ''
     const results: AgentSessionModelOption[] = []
     const seenModelKeys = new Set<string>()
 
-    const providers = {
-      ...doc.provider,
-      ...doc.custom_provider
-    }
+    const providers = doc.provider ?? {}
 
     for (const [providerId, provider] of Object.entries(providers)) {
       if (!provider || typeof provider !== 'object' || !provider.models) {
@@ -136,7 +144,7 @@ export async function parseMcodeModelCatalogFromConfigFile(
       }
 
       for (const [modelId, model] of modelEntries) {
-        if (seenModelKeys.has(modelId)) {
+        if (seenModelKeys.has(modelId) || modelId === 'MiniMax-M3.1-Flash-Preview') {
           continue
         }
         seenModelKeys.add(modelId)
@@ -157,16 +165,25 @@ export async function parseMcodeModelCatalogFromConfigFile(
           Array.isArray(model?.thinking?.effortOptions) &&
           model.thinking.effortOptions.some((opt) => opt !== 'default')
         const isFlash = modelId.includes('Flash')
-        const supportsEffort = hasEffortOptions || isFlash
+        const hasGranularEffort = hasEffortOptions || isFlash
+        const isSwitchable =
+          model?.thinking_config?.mode === 'switchable' ||
+          modelId.includes('M3') ||
+          modelId.includes('M2.7')
 
-        const efforts = supportsEffort ? MCODE_EFFORT_CHOICES : []
-        const defaultEffort = supportsEffort ? 'high' : undefined
-        const declaredDefaultEffort = supportsEffort ? 'high' : null
+        const efforts = hasGranularEffort
+          ? MCODE_EFFORT_CHOICES
+          : isSwitchable
+            ? MCODE_ON_OFF_EFFORT_CHOICES
+            : []
+        const defaultEffort = hasGranularEffort ? 'high' : isSwitchable ? 'on' : undefined
+        const declaredDefaultEffort = defaultEffort ?? null
 
         const fullId = `m:${providerId}:${modelId}:v:thinking`
         const effortMetadata = { efforts, defaultEffort, declaredDefaultEffort }
         DYNAMIC_MODEL_EFFORTS.set(fullId, effortMetadata)
         DYNAMIC_MODEL_EFFORTS.set(modelId, effortMetadata)
+        DYNAMIC_MODEL_EFFORTS.set(`m:${providerId}:${modelId}:v:`, effortMetadata)
 
         results.push({
           id: fullId,
