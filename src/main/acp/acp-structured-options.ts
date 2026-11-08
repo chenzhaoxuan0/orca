@@ -40,6 +40,7 @@ export class AcpStructuredOptions {
       | 'effortChangesModel'
       | 'clampsUnlistedEffort'
       | 'builtinCommands'
+      | 'normalizeConfigOptions'
     > = {}
   ) {}
 
@@ -81,7 +82,8 @@ export class AcpStructuredOptions {
     },
     origin: 'new' | 'loaded' = 'loaded'
   ): void {
-    this.configOptions = response.configOptions ?? []
+    const rawOptions = response.configOptions ?? []
+    this.configOptions = this.dialect.normalizeConfigOptions?.(rawOptions) ?? rawOptions
     this.models = response.models ?? null
     this.resolvesConfig = origin === 'new'
     this.appliedInput.clear()
@@ -125,7 +127,7 @@ export class AcpStructuredOptions {
     if (!configOptions) {
       return
     }
-    this.configOptions = configOptions
+    this.configOptions = this.dialect.normalizeConfigOptions?.(configOptions) ?? configOptions
     const proof = this.selectorProof
     if (!proof || this.writing > 0) {
       return

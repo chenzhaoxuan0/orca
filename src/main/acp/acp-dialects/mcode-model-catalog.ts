@@ -8,47 +8,37 @@ import type {
 } from '../../../shared/agent-session/agent-session-wire'
 import type { InitializeResponse } from '../generated/acp-protocol.generated'
 
-const MCODE_EFFORT_CHOICES: AgentSessionOptionChoice[] = [
-  { value: 'default', label: 'Default' },
+export const MCODE_EFFORT_CHOICES: AgentSessionOptionChoice[] = [
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
   { value: 'high', label: 'High' },
-  { value: 'xhigh', label: 'Xhigh' },
+  { value: 'xhigh', label: 'Extra high' },
   { value: 'max', label: 'Max' }
 ]
+
+const MODEL_DESCRIPTIONS: Readonly<Record<string, string>> = {
+  'MiniMax-M3.1-Flash': 'Fast and versatile frontier model with deep reasoning',
+  'MiniMax-M3': 'Frontier model for complex agentic coding and deep reasoning'
+}
 
 const DEFAULT_MCODE_MODELS: AgentSessionModelOption[] = [
   {
     id: 'm:minimax:MiniMax-M3.1-Flash:v:thinking',
-    label: 'MiniMax M3.1 Flash (thinking)',
+    label: 'MiniMax M3.1 Flash',
+    description: MODEL_DESCRIPTIONS['MiniMax-M3.1-Flash'],
     isDefault: true,
     efforts: MCODE_EFFORT_CHOICES,
-    defaultEffort: 'default',
-    declaredDefaultEffort: 'default'
-  },
-  {
-    id: 'm:minimax:MiniMax-M3.1-Flash:v:',
-    label: 'MiniMax M3.1 Flash',
-    isDefault: false,
-    efforts: MCODE_EFFORT_CHOICES,
-    defaultEffort: 'default',
-    declaredDefaultEffort: 'default'
+    defaultEffort: 'high',
+    declaredDefaultEffort: 'high'
   },
   {
     id: 'm:minimax:MiniMax-M3:v:thinking',
-    label: 'MiniMax M3 (thinking)',
-    isDefault: false,
-    efforts: MCODE_EFFORT_CHOICES,
-    defaultEffort: 'default',
-    declaredDefaultEffort: 'default'
-  },
-  {
-    id: 'm:minimax:MiniMax-M3:v:',
     label: 'MiniMax M3',
+    description: MODEL_DESCRIPTIONS['MiniMax-M3'],
     isDefault: false,
     efforts: MCODE_EFFORT_CHOICES,
-    defaultEffort: 'default',
-    declaredDefaultEffort: 'default'
+    defaultEffort: 'high',
+    declaredDefaultEffort: 'high'
   }
 ]
 
@@ -73,15 +63,11 @@ export async function parseMcodeModelCatalogFromConfigFile(
     const doc = parseYaml(raw) as {
       defaultModel?: string
       provider?: Record<string, McodeProviderConfig>
-      custom_provider?: Record<string, McodeProviderConfig>
     }
     const defaultModel = typeof doc.defaultModel === 'string' ? doc.defaultModel : ''
     const results: AgentSessionModelOption[] = []
 
-    const providers = {
-      ...doc.provider,
-      ...doc.custom_provider
-    }
+    const providers = doc.provider ?? {}
 
     for (const [providerId, provider] of Object.entries(providers)) {
       if (!provider || typeof provider !== 'object' || !provider.models) {
@@ -107,42 +93,27 @@ export async function parseMcodeModelCatalogFromConfigFile(
       }
 
       for (const [modelId, model] of modelEntries) {
-        const displayName = model?.name || modelId
-        const hasThinking =
-          model?.variants?.thinking !== undefined ||
-          model?.thinking_config?.mode === 'forced_on' ||
-          model?.thinking_config?.mode === 'switchable'
+        const displayName = model?.name ? `MiniMax ${model.name}` : modelId
+        const description =
+          MODEL_DESCRIPTIONS[modelId] ??
+          (modelId.includes('Flash')
+            ? 'Fast and versatile frontier model with deep reasoning'
+            : 'Frontier model for complex agentic coding and deep reasoning')
 
         const isModelDefault =
-          defaultModel === `${providerId}/${modelId}` || defaultModel === modelId
+          defaultModel === `${providerId}/${modelId}` ||
+          defaultModel === modelId ||
+          modelId === 'MiniMax-M3.1-Flash'
 
-        if (hasThinking) {
-          results.push({
-            id: `m:${providerId}:${modelId}:v:thinking`,
-            label: `${displayName} · thinking`,
-            isDefault: isModelDefault,
-            efforts: MCODE_EFFORT_CHOICES,
-            defaultEffort: 'default',
-            declaredDefaultEffort: 'default'
-          })
-          results.push({
-            id: `m:${providerId}:${modelId}:v:`,
-            label: displayName,
-            isDefault: false,
-            efforts: MCODE_EFFORT_CHOICES,
-            defaultEffort: 'default',
-            declaredDefaultEffort: 'default'
-          })
-        } else {
-          results.push({
-            id: `m:${providerId}:${modelId}:v:`,
-            label: displayName,
-            isDefault: isModelDefault,
-            efforts: [],
-            defaultEffort: undefined,
-            declaredDefaultEffort: null
-          })
-        }
+        results.push({
+          id: `m:${providerId}:${modelId}:v:thinking`,
+          label: displayName,
+          description,
+          isDefault: isModelDefault,
+          efforts: MCODE_EFFORT_CHOICES,
+          defaultEffort: 'high',
+          declaredDefaultEffort: 'high'
+        })
       }
     }
 

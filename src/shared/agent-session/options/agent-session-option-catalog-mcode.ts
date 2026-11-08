@@ -1,21 +1,22 @@
 import type { AgentSessionOptionCatalog, CatalogOption } from './agent-session-option-catalog-types'
 import { agentChoiceCliApply } from '../../agent-launch/choices/agent-choice-cli-apply'
 
-const MCODE_EFFORT: CatalogOption = {
+export const MCODE_EFFORT_CHOICES = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'xhigh', label: 'Extra high' },
+  { value: 'max', label: 'Max' }
+]
+
+export const MCODE_EFFORT: CatalogOption = {
   id: 'effort',
   label: 'Reasoning effort',
   category: 'thought_level',
   kind: {
     type: 'select',
-    choices: [
-      { value: 'default', label: 'Default' },
-      { value: 'low', label: 'Low' },
-      { value: 'medium', label: 'Medium' },
-      { value: 'high', label: 'High' },
-      { value: 'xhigh', label: 'Xhigh' },
-      { value: 'max', label: 'Max' }
-    ],
-    defaultValue: 'default'
+    choices: MCODE_EFFORT_CHOICES,
+    defaultValue: 'high'
   },
   apply: {
     ...agentChoiceCliApply(
@@ -44,29 +45,20 @@ export function mcodeCliModelFromId(id: string): string {
 
 export const MCODE_SESSION_OPTION_CATALOG: AgentSessionOptionCatalog = {
   supportsWorkerLaunchPreferences: true,
+  hostListingNamesConfiguredModel: true,
   models: [
     {
       id: 'm:minimax:MiniMax-M3.1-Flash:v:thinking',
-      label: 'MiniMax M3.1 Flash (thinking)',
+      label: 'MiniMax M3.1 Flash',
+      description: 'Fast and versatile frontier model with deep reasoning',
       contextWindowTokens: 1_000_000,
       isDefault: true,
       options: [MCODE_EFFORT]
     },
     {
-      id: 'm:minimax:MiniMax-M3.1-Flash:v:',
-      label: 'MiniMax M3.1 Flash',
-      contextWindowTokens: 1_000_000,
-      options: [MCODE_EFFORT]
-    },
-    {
       id: 'm:minimax:MiniMax-M3:v:thinking',
-      label: 'MiniMax M3 (thinking)',
-      contextWindowTokens: 1_000_000,
-      options: [MCODE_EFFORT]
-    },
-    {
-      id: 'm:minimax:MiniMax-M3:v:',
       label: 'MiniMax M3',
+      description: 'Frontier model for complex agentic coding and deep reasoning',
       contextWindowTokens: 1_000_000,
       options: [MCODE_EFFORT]
     }

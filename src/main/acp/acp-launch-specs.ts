@@ -2,7 +2,7 @@ import type { AntigravityChatAuthConfig } from '../../shared/antigravity-chat-au
 import type { GlobalSettings } from '../../shared/global-settings-types'
 import type { AcpHistoryTurnIdentity } from './history/acp-history-replay'
 import { join } from 'node:path'
-import { GENERIC_ACP_DIALECT, type AcpDialect } from './acp-dialects/acp-dialect'
+import type { AcpDialect } from './acp-dialects/acp-dialect'
 import { GROK_ACP_DIALECT } from './acp-dialects/grok-dialect'
 import { OMP_ACP_DIALECT } from './acp-dialects/omp-dialect'
 import { OPENCODE_ACP_DIALECT } from './acp-dialects/opencode-dialect'
@@ -17,6 +17,7 @@ import { compareAppVersions } from '../../shared/app-version'
 import type { ManagedRuntime } from '../node-runtime/managed-runtime-release'
 import { readGrokModelCatalog } from './acp-dialects/grok-model-catalog'
 import { readMcodeModelCatalog } from './acp-dialects/mcode-model-catalog'
+import { MCODE_DIALECT } from './acp-dialects/mcode-dialect'
 import {
   OPENCODE_MODEL_LISTING_ARGS,
   parseOpenCodeModelListing
@@ -316,7 +317,7 @@ export const MCODE_LAUNCH_SPEC = {
   command: 'mcode',
   args: () => ['acp'],
   env: {},
-  dialect: GENERIC_ACP_DIALECT,
+  dialect: MCODE_DIALECT,
   loginCommand: agentSessionSignInFor('mcode')?.loginCommand ?? [],
   account: directoryAccountBinding('MINIMAX_DATA_DIR', (homePath) => join(homePath, '.minimax')),
   installDirectories: () => [],
