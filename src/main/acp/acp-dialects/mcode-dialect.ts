@@ -1,4 +1,4 @@
-import { acpSelectChoices } from '../acp-select-choices'
+import { acpSelectChoices } from '../options/acp-select-choices'
 import type {
   SessionConfigOption,
   SessionConfigSelectOption

@@ -2,7 +2,7 @@ import { getGitHubMutationTarget } from './github-work-item-mutation-target'
 export { getGitHubMutationTarget } from './github-work-item-mutation-target'
 import { callGitHubTargetOperation } from '@/lib/work-items/github/github-work-item-target-request'
 import { useAppStore } from '@/store'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import { gitHubSlugApiForTarget } from '@/runtime/repository-github/github-slug-owner-api'
 import {
   getGitHubRepoRoutingTarget,
@@ -16,7 +16,7 @@ import {
 } from '@/components/github/github-work-item-identity'
 import { notifyWorkItemDetailsMutation } from '@/components/github/github-work-item-comment-mutations'
 import { githubProjectHost } from '../../../../shared/github/project-identity'
-import type { TaskSourceContext } from '../../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../../shared/work-items/task-source-context'
 import type { GitHubOwnerRepo } from '../../../../shared/github/pull-request-types'
 import type { GitHubWorkItem } from '../../../../shared/github/work-item-types'
 import { codeHostErrorText } from '@/lib/code-host-error-copy'
