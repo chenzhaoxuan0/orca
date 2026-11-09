@@ -1,6 +1,30 @@
 import type { AgentSessionOptionCatalog, CatalogOption } from './agent-session-option-catalog-types'
 import { agentChoiceCliApply } from '../../agent-launch/choices/agent-choice-cli-apply'
 
+export const MCODE_MODEL_LABELS: Readonly<Record<string, string>> = {
+  'MiniMax-M3.1-Flash': 'MiniMax M3.1 Flash',
+  'MiniMax-M3': 'MiniMax M3',
+  'MiniMax-M2.7-highspeed': 'MiniMax M2.7 Highspeed',
+  'MiniMax-M2.7': 'MiniMax M2.7'
+}
+
+export const MCODE_MODEL_DESCRIPTIONS: Readonly<Record<string, string>> = {
+  'MiniMax-M3.1-Flash': 'Fast and versatile frontier model with deep reasoning',
+  'MiniMax-M3': 'Frontier model for complex agentic coding and deep reasoning',
+  'MiniMax-M2.7-highspeed': 'High-speed model for everyday coding and tool use',
+  'MiniMax-M2.7': 'Capable model for everyday programming tasks'
+}
+
+/** Presentation copy for a model the shipped catalog does not name. */
+export function mcodeModelDescription(modelId: string): string {
+  return (
+    MCODE_MODEL_DESCRIPTIONS[modelId] ??
+    (modelId.includes('Flash')
+      ? 'Fast and versatile frontier model with deep reasoning'
+      : 'Frontier model for complex agentic coding and deep reasoning')
+  )
+}
+
 export const MCODE_EFFORT_CHOICES = [
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
@@ -79,16 +103,16 @@ export const MCODE_SESSION_OPTION_CATALOG: AgentSessionOptionCatalog = {
   models: [
     {
       id: 'm:minimax:MiniMax-M3.1-Flash:v:thinking',
-      label: 'MiniMax M3.1 Flash',
-      description: 'Fast and versatile frontier model with deep reasoning',
+      label: MCODE_MODEL_LABELS['MiniMax-M3.1-Flash'],
+      description: MCODE_MODEL_DESCRIPTIONS['MiniMax-M3.1-Flash'],
       contextWindowTokens: 1_000_000,
       isDefault: true,
       options: [MCODE_EFFORT]
     },
     {
       id: 'm:minimax:MiniMax-M3:v:thinking',
-      label: 'MiniMax M3',
-      description: 'Frontier model for complex agentic coding and deep reasoning',
+      label: MCODE_MODEL_LABELS['MiniMax-M3'],
+      description: MCODE_MODEL_DESCRIPTIONS['MiniMax-M3'],
       contextWindowTokens: 1_000_000,
       options: [MCODE_ON_OFF_EFFORT]
     }

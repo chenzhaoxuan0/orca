@@ -4,49 +4,28 @@ import type {
   SessionConfigSelectOption
 } from '../generated/acp-protocol.generated'
 import type { AcpDialect } from './acp-dialect'
-import { mcodeModelEfforts, MODEL_DESCRIPTIONS } from './mcode-model-catalog'
+import { mcodeModelEfforts } from './mcode-model-catalog'
+import {
+  MCODE_MODEL_DESCRIPTIONS,
+  MCODE_MODEL_LABELS,
+  mcodeModelDescription
+} from '../../../shared/agent-session/options/agent-session-option-catalog-mcode'
 
 function resolveMcodeModelNameAndDescription(choice: SessionConfigSelectOption): {
   name: string
   description?: string
 } {
   const rawId = choice.value.replace(/^m:[^:]+:([^:]+)(?::v:.*)?$/, '$1')
-
-  if (rawId === 'MiniMax-M3.1-Flash' || choice.value.includes('MiniMax-M3.1-Flash:')) {
+  if (MCODE_MODEL_LABELS[rawId]) {
     return {
-      name: 'MiniMax M3.1 Flash',
-      description: MODEL_DESCRIPTIONS['MiniMax-M3.1-Flash']
-    }
-  }
-  if (rawId === 'MiniMax-M3' || choice.value.includes('MiniMax-M3:')) {
-    return {
-      name: 'MiniMax M3',
-      description: MODEL_DESCRIPTIONS['MiniMax-M3']
-    }
-  }
-  if (rawId === 'MiniMax-M2.7-highspeed' || choice.value.includes('MiniMax-M2.7-highspeed:')) {
-    return {
-      name: 'MiniMax M2.7 Highspeed',
-      description: MODEL_DESCRIPTIONS['MiniMax-M2.7-highspeed']
-    }
-  }
-  if (rawId === 'MiniMax-M2.7' || choice.value.includes('MiniMax-M2.7:')) {
-    return {
-      name: 'MiniMax M2.7',
-      description: MODEL_DESCRIPTIONS['MiniMax-M2.7']
+      name: MCODE_MODEL_LABELS[rawId],
+      description: MCODE_MODEL_DESCRIPTIONS[rawId]
     }
   }
 
   const baseName = choice.name.replace(/\s*·\s*thinking$/, '')
   const name = baseName.startsWith('MiniMax') ? baseName : `MiniMax ${baseName}`
-  const description =
-    choice.description ??
-    MODEL_DESCRIPTIONS[rawId] ??
-    (rawId.includes('Flash')
-      ? 'Fast and versatile frontier model with deep reasoning'
-      : 'Frontier model for complex agentic coding and deep reasoning')
-
-  return { name, description }
+  return { name, description: choice.description ?? mcodeModelDescription(rawId) }
 }
 
 export function normalizeMcodeConfigOptions(options: SessionConfigOption[]): SessionConfigOption[] {
@@ -55,10 +34,9 @@ export function normalizeMcodeConfigOptions(options: SessionConfigOption[]): Ses
   )
   const rawModelValue = modelOption?.type === 'select' ? modelOption.currentValue : ''
   const isOff = rawModelValue.endsWith(':v:')
-  const isSwitchable =
-    rawModelValue.includes('MiniMax-M3:') ||
-    rawModelValue.includes('MiniMax-M2.7:') ||
-    rawModelValue.includes('MiniMax-M2.7-highspeed:')
+  const isSwitchable = mcodeModelEfforts({ modelId: rawModelValue }).efforts.some(
+    (choice) => choice.value === 'off'
+  )
 
   let hasThoughtLevel = false
 
