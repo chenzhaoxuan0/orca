@@ -23,7 +23,7 @@ function resolveMcodeModelNameAndDescription(choice: SessionConfigSelectOption):
     }
   }
 
-  const baseName = choice.name.replace(/\s*·\s*thinking$/, '')
+  const baseName = choice.name.replace(/\s*\u00b7\s*thinking$/, '')
   const name = baseName.startsWith('MiniMax') ? baseName : `MiniMax ${baseName}`
   return { name, description: choice.description ?? mcodeModelDescription(rawId) }
 }
