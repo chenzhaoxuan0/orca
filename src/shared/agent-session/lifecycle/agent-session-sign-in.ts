@@ -20,7 +20,8 @@ export const AGENT_SESSION_SIGN_IN = [
   { agent: 'omp', loginCommand: ['omp'], slashCommand: '/login' },
   // An `agy` login does not sign its chats in: they keep their own sign-in.
   { agent: 'antigravity', loginCommand: [] },
-  { agent: 'mcode', loginCommand: ['mcode', 'login'] }
+  // Why the TUI: bare `mcode login` heads straight to the cn OAuth flow; the TUI's /login picks the account region.
+  { agent: 'mcode', loginCommand: ['mcode'], slashCommand: '/login' }
 ] as const
 
 export function agentSessionSignInFor(agent: string | undefined) {
