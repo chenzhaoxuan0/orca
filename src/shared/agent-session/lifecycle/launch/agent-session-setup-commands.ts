@@ -128,7 +128,9 @@ export const AGENT_SESSION_SETUP_COMMANDS = [
     loginEnv: { AGY_CLI_DISABLE_AUTO_UPDATE: 'true' },
     installCommand: 'curl -fsSL https://antigravity.google/cli/install.sh | bash',
     windowsInstallScript: 'https://antigravity.google/cli/install.ps1'
-  }
+  },
+  // Why the TUI: bare `mcode login` heads straight to the cn OAuth flow; the TUI's /login picks the account region.
+  { agent: 'mcode', loginCommand: ['mcode'], slashCommand: '/login' }
 ] as const
 
 export function agentSessionSetupFor(agent: string | undefined) {
