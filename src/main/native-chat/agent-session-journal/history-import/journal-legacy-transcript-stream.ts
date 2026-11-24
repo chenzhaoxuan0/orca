@@ -2,6 +2,7 @@ import { decodeClaudeTranscriptLine } from '../../transcript-decoding/transcript
 import { decodeCodexTranscriptLine } from '../../transcript-decoding/transcript-line-decoders-codex'
 import { decodeGrokTranscriptLine } from '../../transcript-decoding/transcript-line-decoders-grok'
 import { decodeOmpTranscriptLine } from '../../transcript-decoding/transcript-line-decoders-omp'
+import { createMcodeTranscriptDecoder } from '../../transcript-decoding/transcript-line-decoders-mcode'
 import { createReadStream } from 'node:fs'
 import { decodeTranscriptStream } from '../../transcript-streaming/transcript-stream-lines'
 import {
@@ -40,3 +41,10 @@ export const TRANSCRIPT_DECODERS = {
   grok: decodeGrokTranscriptLine,
   omp: decodeOmpTranscriptLine
 } as const
+
+export type LegacyTranscriptAgent = keyof typeof TRANSCRIPT_DECODERS | 'mcode'
+
+/** One decoder per read: mcode's display log writes a session's recent rows again when it reopens. */
+export function createLegacyTranscriptDecoder(agent: LegacyTranscriptAgent) {
+  return agent === 'mcode' ? createMcodeTranscriptDecoder() : TRANSCRIPT_DECODERS[agent]
+}

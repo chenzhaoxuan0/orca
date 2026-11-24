@@ -10,7 +10,11 @@ import type * as ids from '../../../../shared/agent-session/journal/agent-sessio
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import { resolveNativeChatTranscriptAgent } from '../../../../shared/native-chat/native-chat-agent-support'
 import { resolveSessionFilePath, type ResolveSessionFileOptions } from '../../session-file-resolver'
-import { readLegacyImportTranscript, TRANSCRIPT_DECODERS } from './journal-legacy-transcript-stream'
+import {
+  createLegacyTranscriptDecoder,
+  readLegacyImportTranscript,
+  type LegacyTranscriptAgent
+} from './journal-legacy-transcript-stream'
 import { readOpenCodeNativeChatTranscriptFull } from '../../transcript-history/opencode/transcript-opencode'
 import { prepareHermesImport } from './journal-hermes-import'
 import { prepareAntigravityImport } from './journal-antigravity-import'
@@ -189,7 +193,7 @@ async function prepareOpenCodeImport(input: {
 /** Bound during decode so memory follows retained history rather than source-file size. */
 async function decodeReplacementItems(input: {
   filePath: string
-  transcriptAgent: keyof typeof TRANSCRIPT_DECODERS
+  transcriptAgent: LegacyTranscriptAgent
   agent: AgentType
   sessionId: string
   decodedMessageIdentities?: true
@@ -224,6 +228,7 @@ async function decodeReplacementItems(input: {
       ? createPiTranscriptCollector(toItem, (line, lineIndex) => tracker.identify(line, lineIndex))
       : null
   const forkTip = createImportedForkTip()
+  const decode = createLegacyTranscriptDecoder(input.transcriptAgent)
   let lineIndex = 0
   // A Claude file of metadata alone is one nothing was sent in; an undecodable turn still counts.
   let conversation = input.transcriptAgent !== 'claude'
@@ -246,7 +251,7 @@ async function decodeReplacementItems(input: {
           pi.record(line, fallbackId, currentLineIndex)
           return null
         }
-        const message = TRANSCRIPT_DECODERS[input.transcriptAgent](line, fallbackId)
+        const message = decode(line, fallbackId)
         conversation ||= !!message || mayBeClaudeConversationRecord(line)
         if (message) {
           const identity =

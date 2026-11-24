@@ -118,17 +118,30 @@ export function adoptedTranscriptSourceObserver(input: {
   let sawCodexMetadata = false
   /** The conversation's recorded identity, read after every line is observed. */
   const identity = async (): Promise<{ sessionId: string | null; cwd: string | null }> => {
-    if (input.agent === 'grok') {
-      const summaryPath = join(dirname(input.filePath), 'summary.json')
-      if (!(await admitTranscriptPath(dirname(input.filePath), summaryPath))) {
-        throw new Error('The conversation summary is outside its storage directory.')
+    // Grok's summary and mcode's manifest sit beside the transcript and carry its identity.
+    const sidecar =
+      input.agent === 'grok' ? 'summary.json' : input.agent === 'mcode' ? 'manifest.json' : null
+    if (sidecar) {
+      const sidecarPath = join(dirname(input.filePath), sidecar)
+      if (!(await admitTranscriptPath(dirname(input.filePath), sidecarPath))) {
+        throw new Error(
+          input.agent === 'grok'
+            ? 'The conversation summary is outside its storage directory.'
+            : 'The session manifest is outside its storage directory.'
+        )
       }
-      const { buffer } = await readNodeFileWithinLimit(summaryPath, input.maxSourceBytes, {
+      const { buffer } = await readNodeFileWithinLimit(sidecarPath, input.maxSourceBytes, {
         regularFileOnly: true
       })
-      const summary = asRecord(asRecord(JSON.parse(buffer.toString('utf8')))?.info)
-      sessionId = extractString(summary?.id) ?? sessionIdFromFileName(dirname(input.filePath))
-      cwd = extractString(summary?.cwd)
+      const record = asRecord(JSON.parse(buffer.toString('utf8')))
+      if (input.agent === 'grok') {
+        const summary = asRecord(record?.info)
+        sessionId = extractString(summary?.id) ?? sessionIdFromFileName(dirname(input.filePath))
+        cwd = extractString(summary?.cwd)
+      } else {
+        // The dated session folder's manifest carries the identity; its store records no working directory.
+        sessionId = extractString(record?.sessionId)
+      }
     }
     if (input.agent === 'pi' && sessionIdFromFileName(input.filePath) !== sessionId) {
       throw new Error('The saved conversation header does not match its file identity.')
@@ -164,7 +177,8 @@ export function adoptedTranscriptSourceObserver(input: {
       await assertAdoptedSourceIdentity(
         input.source,
         await identity(),
-        input.agent !== 'codex',
+        // mcode loads sessions by id regardless of the folder they were recorded in.
+        input.agent !== 'codex' && input.agent !== 'mcode',
         input.signal,
         input.agent
       )

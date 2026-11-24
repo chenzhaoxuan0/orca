@@ -19,6 +19,8 @@ import {
   findGrokChatHistoryBySessionId,
   resolveGrokSessionsDir
 } from '../../shared/agent-hook-listener/providers/grok/grok-session-paths'
+import { mcodeSessionsDir as mcodeSessionsDirFromEnv } from '../../shared/agent-launch/environment/mcode-data-dir'
+import { mcodeTranscriptLog } from '../ai-vault/scanners/mcode/mcode-session-layout'
 import {
   hostAdditionalCodexHomePaths,
   needsWslHostResolution,
@@ -60,6 +62,10 @@ function grokSessionsDir(): string {
   return resolveGrokSessionsDir(process.env, homedir())
 }
 
+function mcodeSessionsDir(): string {
+  return mcodeSessionsDirFromEnv(process.env)
+}
+
 export type ResolveSessionFileOptions = {
   strictErrors?: boolean
   claudeProjectsDir?: string
@@ -69,6 +75,8 @@ export type ResolveSessionFileOptions = {
   codexSessionsDirs?: string[]
   grokSessionsDir?: string
   ompSessionsDir?: string
+  /** Defaults to the pinned mcode data dir's dated v2/sessions tree. */
+  mcodeSessionsDir?: string
   /** Hook paths are authoritative: Claude filenames may differ from its reported session ID. */
   transcriptPath?: string
   /** Restrict exact-path resolution to this attested guest. */
@@ -190,6 +198,16 @@ async function resolveSessionFileById(
       signal,
       strictErrors: options.strictErrors
     })
+  }
+  if (transcriptAgent === 'mcode') {
+    const override = options.mcodeSessionsDir
+    const log = await resolveTiered('mcode', trimmedId, [override ?? mcodeSessionsDir()], {
+      wslTier: wslTier && !override,
+      signal,
+      strictErrors: options.strictErrors
+    })
+    // A session that kept a messages log beside its older display log reads that one, as mcode does.
+    return log ? mcodeTranscriptLog(log, signal) : log
   }
   transcriptAgent satisfies never
   return null

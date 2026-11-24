@@ -9,6 +9,7 @@ import {
 import { agentSessionSetupFor } from '../../shared/agent-session/lifecycle/launch/agent-session-setup-commands'
 import { isLegacyAgentSessionAccountHome } from '../../shared/agent-session/lifecycle/accounts/agent-session-account-home'
 import { resolveMcodeDataDir } from '../../shared/agent-launch/environment/mcode-data-dir'
+import { MCODE_TRANSCRIPT_IMPORT } from './mcode-transcript-import'
 
 // Chats and terminals share mcode's session store and `mvs_*` ids.
 const MCODE_SESSION_HISTORY: StructuredAgentSessionHistory = {
@@ -54,7 +55,7 @@ export const MCODE_LAUNCH_SPEC = {
     listingNamesConfiguredModel: true,
     homeConfigFiles: ['config.yaml']
   },
-  transcriptImport: null,
+  transcriptImport: MCODE_TRANSCRIPT_IMPORT,
   sessionHistory: MCODE_SESSION_HISTORY,
   resumePreference: 'resume'
 } satisfies AcpLaunchSpec
