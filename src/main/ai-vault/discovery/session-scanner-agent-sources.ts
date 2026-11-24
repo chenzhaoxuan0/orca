@@ -17,6 +17,7 @@ import { devinSessionsDbDependencyPath } from '../scanners/devin/session-scanner
 import { resolveKimiSessionsDir } from '../scanners/kimi/session-scanner-kimi-paths'
 import { resolveMuseSessionsDir } from '../../../shared/agent-hook-listener/providers/muse/muse-session-log'
 import { isKiroSessionMetadataPath } from '../scanners/kiro/session-scanner-kiro-parser'
+import { MCODE_AGENT_SOURCE } from '../scanners/mcode/mcode-session-layout'
 
 import { OPENCLAW_AGENT_SOURCE } from '../scanners/openclaw/openclaw-session-layout'
 import { isOmpConversationDirectory } from '../scanners/omp/session-scanner-omp-subagent-transcripts'
@@ -216,6 +217,7 @@ export const AI_VAULT_AGENT_SOURCES: AiVaultAgentSourceTable = {
     // Per-session subdirectories hold background task state, not sessions.
     directoryPredicate: () => false
   },
+  mcode: MCODE_AGENT_SOURCE,
   rovo: {
     rootDirs: (options, wslHomeDirs) =>
       sessionRootDirs(options.rovoSessionsDir ?? ROVO_SESSIONS_DIR, wslHomeDirs, [

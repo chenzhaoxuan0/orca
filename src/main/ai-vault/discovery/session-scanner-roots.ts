@@ -6,6 +6,7 @@ import { resolveAbsoluteDirOverride } from '../../../shared/file-access/absolute
 import { isWslUncPath } from '../../../shared/file-access/wsl-paths'
 import { WSL_CODEX_RUNTIME_HOME_SEGMENTS } from '../../pty/shell-startup/codex-home-wsl-env'
 import { ompProfileSessionsDirs, resolveOmpSessionsDir } from '../scanners/omp/omp-session-root'
+import { MCODE_SESSIONS_HOME_SEGMENTS } from '../../../shared/agent-launch/environment/mcode-data-dir'
 
 /** Where each transcript agent's session tree sits under a home dir (host or WSL guest). */
 export const AGENT_SESSION_HOME_SEGMENTS = {
@@ -16,7 +17,8 @@ export const AGENT_SESSION_HOME_SEGMENTS = {
     ['.codex', 'sessions']
   ],
   grok: [['.grok', 'sessions']],
-  omp: [['.omp', 'agent', 'sessions']]
+  omp: [['.omp', 'agent', 'sessions']],
+  mcode: [MCODE_SESSIONS_HOME_SEGMENTS]
 } as const satisfies Record<string, readonly (readonly string[])[]>
 
 export type SessionHomeAgent = keyof typeof AGENT_SESSION_HOME_SEGMENTS

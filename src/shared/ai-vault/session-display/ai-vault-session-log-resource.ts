@@ -13,6 +13,18 @@ export function grokTranscriptPathForMetadata(filePath: string): string {
   return replaceSessionFileName(filePath, 'chat_history.jsonl')
 }
 
+export const MCODE_MESSAGES_LOG = 'messages.jsonl'
+/** Runtimes before the messages log kept a session's turns in a display log beside the manifest. */
+export const MCODE_DISPLAY_LOG = 'display.jsonl'
+
+export function mcodeMessagesPathForManifest(filePath: string): string {
+  return replaceSessionFileName(filePath, MCODE_MESSAGES_LOG)
+}
+
+export function mcodeDisplayLogPathForManifest(filePath: string): string {
+  return replaceSessionFileName(filePath, MCODE_DISPLAY_LOG)
+}
+
 export function rovoTranscriptPathForMetadata(filePath: string): string {
   return replaceSessionFileName(filePath, 'session_context.json')
 }
@@ -60,7 +72,11 @@ const logFileResolvers = {
   kimi: () => null,
   muse: jsonlLog,
   jcode: jsonLog,
-  kiro: (filePath) => kiroTranscriptPathForMetadata(filePath) || null
+  kiro: (filePath) => kiroTranscriptPathForMetadata(filePath) || null,
+  mcode: (filePath) =>
+    getRuntimePathBasename(filePath) === 'manifest.json'
+      ? mcodeMessagesPathForManifest(filePath)
+      : null
 } satisfies Record<AiVaultAgent, LogFileResolver>
 
 export function aiVaultSessionLogFilePath(

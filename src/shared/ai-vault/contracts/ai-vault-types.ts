@@ -28,7 +28,8 @@ export const AI_VAULT_AGENTS = [
   'kimi',
   'muse',
   'jcode',
-  'kiro'
+  'kiro',
+  'mcode'
 ] as const satisfies readonly TuiAgent[]
 
 // RPC clamps scopePaths to this bound because paths only widen discovery; matching producer-side caps are optional.
@@ -91,7 +92,8 @@ export const AI_VAULT_AGENT_LABELS = {
   kimi: 'Kimi',
   muse: 'Muse',
   jcode: 'Jcode',
-  kiro: 'Kiro'
+  kiro: 'Kiro',
+  mcode: 'MiniMax Code'
 } as const satisfies Record<AiVaultAgent, string>
 
 export type AiVaultSessionPreviewMessage = {

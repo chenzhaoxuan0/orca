@@ -12,7 +12,7 @@ import { resolveMcodeDataDir } from '../../shared/agent-launch/environment/mcode
 
 // Chats and terminals share mcode's session store and `mvs_*` ids.
 const MCODE_SESSION_HISTORY: StructuredAgentSessionHistory = {
-  rowAgents: [],
+  rowAgents: ['mcode'],
   rowSessionId: (link) => link.handle.nativeId,
   parseResumeArgs: (args) =>
     resumeInvocationFromOptions(args, { targetless: [], markers: ['--session'] })

@@ -72,6 +72,8 @@ export function getAgentResumeArgv(
     // Why: Kimi resumes by id with --session; sessions are work-dir-scoped (enforced by callers).
     case 'kimi':
       return providerSession.key === 'session_id' ? ['kimi', '--session', id] : null
+    case 'mcode':
+      return providerSession.key === 'session_id' ? ['mcode', '--session', id] : null
     case 'muse':
       return providerSession.key === 'session_id' ? ['muse', 'resume', id] : null
     case 'zcode':
@@ -103,11 +105,12 @@ const FORK_ARGV: Partial<
   pi: ({ transcriptPath }) => (transcriptPath ? ['pi', '--fork', transcriptPath] : null)
 }
 
-/** OpenCode2.0.14/OMP17.0.5 fork through ACP session/fork then resume the copy. Refuse without host-advertised fork; OpenCode2 chats list as opencode2. */
+/** OpenCode2.0.14/OMP17.0.5/mcode fork through ACP session/fork then resume the copy. Refuse without host-advertised fork; OpenCode2 chats list as opencode2. */
 const FORKS_THROUGH_CHAT: ReadonlySet<string> = new Set<ResumableTuiAgent>([
   'opencode',
   'opencode2',
-  'omp'
+  'omp',
+  'mcode'
 ])
 
 /** Whether "Resume in New CLI" can open a copy of this agent's conversations at all. A row's own
