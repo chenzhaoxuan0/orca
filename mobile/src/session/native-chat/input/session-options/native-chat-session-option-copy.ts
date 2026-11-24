@@ -20,6 +20,8 @@ export function mobileNativeChatSessionOptionSay(t: Translate): NativeChatSessio
         return t('chat.sessionOptionCopy.none', 'None')
       case 'off':
         return t('chat.sessionOptionCopy.off', 'Off')
+      case 'on':
+        return t('chat.sessionOptionCopy.on', 'On')
       case 'minimal':
         return t('chat.sessionOptionCopy.minimal', 'Minimal')
       case 'low':

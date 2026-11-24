@@ -22,6 +22,7 @@ import type {
   CompactionUpdate,
   InitializeResponse,
   ModelInfo,
+  SessionConfigOption,
   SessionNotification,
   SessionUpdate,
   ToolCallUpdate
@@ -167,6 +168,9 @@ export type AcpDialect = {
   sessionSteering?: (initialized: InitializeResponse) => boolean
   /** Effort replaces part of the native composite model selection. */
   effortChangesModel?: true
+  /** mcode only: its on/off effort values address the model's thinking variant, so writing them
+   *  rewrites the model id instead of a thought_level option. */
+  effortSelectsThinkingVariant?: true
   subagentStop?: {
     /** Probe without a target to establish support without cancelling a child. */
     probe: { method: string; params: unknown }
@@ -213,6 +217,8 @@ export type AcpDialect = {
   listedSelection?: StructuredAgentListedSelection
   /** Native thinking choices remain valid across models; the agent clamps unsupported levels. */
   clampsUnlistedEffort?: true
+  /** A menu row the session's model state never listed still advertises `modelEfforts`. */
+  unlistedMenuModelEfforts?: true
   /** Opt-in because advertising forms changes agent behaviour; requests use the generic handlers. */
   clientCapabilities?: Pick<ClientCapabilities, 'elicitation' | '_meta'>
   /** Requests that name no session; they belong to the chat's own. */
@@ -280,6 +286,7 @@ export type AcpDialect = {
   skillDescription?(command: AvailableCommand): string | null
   /** Which session rows are the agent's own built-ins, as this process's initialize response proves. */
   builtinCommands?(initialized: InitializeResponse): (command: AvailableCommand) => boolean
+  normalizeConfigOptions?(options: SessionConfigOption[]): SessionConfigOption[]
   /** This agent's fast parameter, mapped to Orca's fast mode toggle. */
   fastConfigId?: string
   /** This agent's on/off thinking parameter, written only for a CLI model id that names it. */
@@ -289,5 +296,24 @@ export type AcpDialect = {
 }
 
 export type AcpChildStops = { subagents: boolean; backgroundTasks: boolean }
+
+/** The dialect surface the structured options state machine reads. */
+export type AcpStructuredOptionsDialect = Pick<
+  AcpDialect,
+  | 'modelEfforts'
+  | 'familyEfforts'
+  | 'withheldCommands'
+  | 'chatModelIds'
+  | 'effortChangesModel'
+  | 'effortSelectsThinkingVariant'
+  | 'clampsUnlistedEffort'
+  | 'unlistedMenuModelEfforts'
+  | 'builtinCommands'
+  | 'normalizeConfigOptions'
+  | 'skillDescription'
+  | 'fastConfigId'
+  | 'thinkingConfigId'
+  | 'interactionModes'
+>
 
 export const GENERIC_ACP_DIALECT: AcpDialect = {}
